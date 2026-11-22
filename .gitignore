@@ -1,0 +1,7 @@
+.env
+.env.*
+config.json
+journal.json
+.monitorank-mcp/
+node_modules/
+.in_use/
