@@ -15,11 +15,36 @@ const path = require('path');
 const readline = require('readline');
 
 const SERVER_NAME = 'monitorank';
-const SERVER_VERSION = '0.1.0';
+const SERVER_VERSION = '0.2.0';
 const API_BASE = process.env.MONITORANK_API_BASE || 'https://api.monitorank.com/';
 const DATA_DIR = process.env.MONITORANK_DATA_DIR || path.join(os.homedir(), '.monitorank-mcp');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
-const JOURNAL_FILE = path.join(DATA_DIR, 'journal.json');
+const PROJECT_DIR = cleanEnv('CLAUDE_PROJECT_DIR') || process.cwd();
+const PROJECT_JOURNAL = path.join(PROJECT_DIR, '.monitorank', 'journal.json');
+
+function cleanEnv(name) {
+  const v = (process.env[name] || '').trim();
+  return v && !v.startsWith('${') ? v : '';
+}
+
+/*
+ * Emplacement du journal (la clé API, elle, reste toujours hors projet) :
+ * 1. MONITORANK_JOURNAL_FILE si défini ;
+ * 2. <projet>/.monitorank/journal.json s'il existe déjà, ou si on tourne dans
+ *    Claude Code cloud (CLAUDE_CODE_REMOTE) ou si MONITORANK_JOURNAL_IN_PROJECT=1 :
+ *    le journal est alors versionné avec le dépôt et survit aux sessions éphémères ;
+ * 3. sinon ~/.monitorank-mcp/journal.json (comportement local historique).
+ */
+function resolveJournal() {
+  const explicit = cleanEnv('MONITORANK_JOURNAL_FILE');
+  if (explicit) return { file: path.resolve(PROJECT_DIR, explicit), scope: 'env' };
+  const remote = /^(1|true)$/i.test(cleanEnv('CLAUDE_CODE_REMOTE'));
+  const optIn = /^(1|true)$/i.test(cleanEnv('MONITORANK_JOURNAL_IN_PROJECT'));
+  if (fs.existsSync(PROJECT_JOURNAL) || remote || optIn) return { file: PROJECT_JOURNAL, scope: 'project' };
+  return { file: path.join(DATA_DIR, 'journal.json'), scope: 'home' };
+}
+const JOURNAL = resolveJournal();
+const JOURNAL_FILE = JOURNAL.file;
 
 // ---------------------------------------------------------------- stockage local
 function ensureDir() {
@@ -30,12 +55,14 @@ function readJson(file, fallback) {
 }
 function writeJson(file, value, mode) {
   ensureDir();
+  const dir = path.dirname(file);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(file, JSON.stringify(value, null, 2), { encoding: 'utf8', mode: mode || 0o600 });
 }
 function getConfig() { return readJson(CONFIG_FILE, {}); }
 function getApiKey() {
-  const env = (process.env.MONITORANK_API_KEY || '').trim();
-  if (env && !env.startsWith('${')) return env;
+  const env = cleanEnv('MONITORANK_API_KEY');
+  if (env) return env;
   return (getConfig().api_key || '').trim();
 }
 
@@ -152,7 +179,7 @@ const TOOLS = [
     handler: async () => {
       const cfg = getConfig();
       const hasKey = Boolean(getApiKey());
-      const out = { api_key_configured: hasKey, default_site: cfg.default_site || null, journal_file: JOURNAL_FILE };
+      const out = { api_key_configured: hasKey, default_site: cfg.default_site || null, journal_file: JOURNAL_FILE, journal_scope: JOURNAL.scope };
       if (hasKey) out.resources = (await callApi('account', 'resources', {})).data;
       return out;
     },
@@ -265,8 +292,8 @@ const TOOLS = [
       const id = j.reduce((m, e) => Math.max(m, e.id || 0), 0) + 1;
       const entry = { id, date: a.date, site: a.site || getConfig().default_site || null, page: a.page || null, type: a.type || null, description: a.description, keywords: a.keywords || [], created_at: new Date().toISOString() };
       j.push(entry);
-      writeJson(JOURNAL_FILE, j);
-      return { added: entry, total: j.length };
+      writeJson(JOURNAL_FILE, j, JOURNAL.scope === 'home' ? 0o600 : 0o644);
+      return { added: entry, total: j.length, journal_file: JOURNAL_FILE, ...(JOURNAL.scope === 'project' ? { reminder: 'Journal versionné dans le projet : committer et pousser .monitorank/journal.json pour le conserver.' } : {}) };
     },
   },
   {
@@ -289,7 +316,7 @@ const TOOLS = [
       const j = readJson(JOURNAL_FILE, []);
       const next = j.filter((e) => e.id !== a.id);
       if (next.length === j.length) throw new Error(`Aucune entrée avec l'id ${a.id}`);
-      writeJson(JOURNAL_FILE, next);
+      writeJson(JOURNAL_FILE, next, JOURNAL.scope === 'home' ? 0o600 : 0o644);
       return { removed: a.id, total: next.length };
     },
   },

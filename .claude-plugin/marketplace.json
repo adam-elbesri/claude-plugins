@@ -1,13 +1,17 @@
 {
   "name": "adam-plugins",
-  "owner": { "name": "Adam El Besri" },
-  "metadata": { "description": "Plugins Claude Code personnels" },
+  "owner": {
+    "name": "Adam El Besri"
+  },
+  "metadata": {
+    "description": "Plugins Claude Code personnels"
+  },
   "plugins": [
     {
       "name": "monitorank",
       "source": "./plugins/monitorank",
       "description": "Suivi des positions Google via l'API Monitorank (lecture seule) et mesure de l'effet des modifications SEO.",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

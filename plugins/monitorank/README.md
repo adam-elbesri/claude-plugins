@@ -23,7 +23,23 @@ Suivre les positions Google de **depannage-traceur-lyon.fr** (ou d'un autre site
 | Fichier | Contenu |
 |---|---|
 | `~/.monitorank-mcp/config.json` | clé API, site par défaut |
-| `~/.monitorank-mcp/journal.json` | journal des modifications SEO |
+| `~/.monitorank-mcp/journal.json` | journal des modifications SEO (par défaut, en local) |
+| `<projet>/.monitorank/journal.json` | journal versionné avec le dépôt (voir ci-dessous) |
+
+La clé API n'est **jamais** écrite dans le projet.
+
+## Journal dans le dépôt (Claude Code cloud)
+
+Les sessions cloud sont éphémères : un journal dans `~` serait perdu. Le journal est donc écrit dans
+`<projet>/.monitorank/journal.json` (à committer) quand :
+
+- on tourne dans Claude Code cloud (`CLAUDE_CODE_REMOTE=true`), ou
+- ce fichier existe déjà dans le projet, ou
+- `MONITORANK_JOURNAL_IN_PROJECT=1`.
+
+`MONITORANK_JOURNAL_FILE=<chemin>` force un emplacement précis. `monitorank_status` indique le fichier utilisé.
+
+En cloud, définir `MONITORANK_API_KEY` dans les variables d'environnement de l'environnement cloud.
 
 ## Limites
 

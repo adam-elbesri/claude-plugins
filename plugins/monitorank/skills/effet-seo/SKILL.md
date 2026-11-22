@@ -12,7 +12,7 @@ Deux usages : **noter** une modification SEO dans le journal local, et **mesurer
 Dès que l'utilisatrice décrit un changement fait (ou prévu à une date précise) sur son site :
 
 1. Extraire : date de mise en ligne (demander si absente — c'est indispensable), page concernée, type (title/meta, contenu, maillage interne, nouvelle page, technique, netlinking, fiche Google Business, autre), description courte, mots-clés visés.
-2. Appeler `seo_journal_add`. Confirmer en une ligne et indiquer quand une première mesure aura du sens (en général 2 semaines après la mise en ligne).
+2. Appeler `seo_journal_add`. Si la réponse contient `reminder` (journal versionné dans le projet), committer et pousser `.monitorank/journal.json` avec un message du type « journal SEO : <changement> », sinon l'entrée sera perdue à la fin de la session cloud. Confirmer en une ligne et indiquer quand une première mesure aura du sens (en général 2 semaines après la mise en ligne).
 
 ## B. Mesurer l'effet d'une modification
 
@@ -39,4 +39,4 @@ Pour un bilan de toutes les modifications du journal, faire une ligne par modifi
 
 - Ne jamais conclure à partir de quelques jours ou d'un écart de 1–2 places : c'est dans le bruit normal.
 - Ne pas présenter une corrélation comme une preuve ; parler de « probable ».
-- Le journal est local à l'ordinateur de l'utilisatrice (dossier `~/.monitorank-mcp`).
+- Le journal est dans `~/.monitorank-mcp` en local, ou dans `<projet>/.monitorank/journal.json` en cloud (ou si ce fichier existe dans le dépôt). `monitorank_status` donne le fichier utilisé. Après `seo_journal_remove` sur un journal de projet, committer aussi.

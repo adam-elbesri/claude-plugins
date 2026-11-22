@@ -1,9 +1,15 @@
 {
   "name": "monitorank",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Suivi des positions Google via l'API Monitorank (lecture seule) et mesure de l'effet des modifications SEO, avec un journal local des changements.",
   "author": {
     "name": "Adam El Besri"
   },
-  "keywords": ["seo", "monitorank", "positions", "google", "rank-tracking"]
+  "keywords": [
+    "seo",
+    "monitorank",
+    "positions",
+    "google",
+    "rank-tracking"
+  ]
 }
