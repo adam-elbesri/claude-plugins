@@ -26,7 +26,12 @@ Suivre les positions Google de **depannage-traceur-lyon.fr** (ou d'un autre site
 | `~/.monitorank-mcp/journal.json` | journal des modifications SEO (par défaut, en local) |
 | `<projet>/.monitorank/journal.json` | journal versionné avec le dépôt (voir ci-dessous) |
 
-La clé API n'est **jamais** écrite dans le projet.
+| `<projet>/.monitorank/config.json` | `{"default_site": "exemple.fr"}` : site par défaut du dépôt |
+
+La clé API n'est **jamais** écrite ni lue dans le projet.
+
+Site par défaut, par ordre de priorité : `<projet>/.monitorank/config.json`, puis la variable
+`MONITORANK_DEFAULT_SITE`, puis `~/.monitorank-mcp/config.json`.
 
 ## Journal dans le dépôt (Claude Code cloud)
 

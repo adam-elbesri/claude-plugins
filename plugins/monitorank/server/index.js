@@ -15,7 +15,7 @@ const path = require('path');
 const readline = require('readline');
 
 const SERVER_NAME = 'monitorank';
-const SERVER_VERSION = '0.2.0';
+const SERVER_VERSION = '0.3.0';
 const API_BASE = process.env.MONITORANK_API_BASE || 'https://api.monitorank.com/';
 const DATA_DIR = process.env.MONITORANK_DATA_DIR || path.join(os.homedir(), '.monitorank-mcp');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
@@ -60,6 +60,12 @@ function writeJson(file, value, mode) {
   fs.writeFileSync(file, JSON.stringify(value, null, 2), { encoding: 'utf8', mode: mode || 0o600 });
 }
 function getConfig() { return readJson(CONFIG_FILE, {}); }
+const PROJECT_CONFIG = path.join(PROJECT_DIR, '.monitorank', 'config.json');
+/** Site par défaut : <projet>/.monitorank/config.json > MONITORANK_DEFAULT_SITE > ~/.monitorank-mcp/config.json. */
+function getDefaultSite() {
+  const proj = (readJson(PROJECT_CONFIG, {}).default_site || '').trim();
+  return proj || cleanEnv('MONITORANK_DEFAULT_SITE') || (getConfig().default_site || '').trim() || null;
+}
 function getApiKey() {
   const env = cleanEnv('MONITORANK_API_KEY');
   if (env) return env;
@@ -169,7 +175,7 @@ const TOOLS = [
       if (a.default_site) cfg.default_site = a.default_site.trim();
       writeJson(CONFIG_FILE, cfg);
       const res = await callApi('account', 'resources', {}).catch((e) => ({ error: e.message }));
-      return { saved: true, default_site: cfg.default_site || null, key_check: res.error ? `Échec du test : ${res.error}` : 'Clé valide', resources: res.data };
+      return { saved: true, default_site: getDefaultSite(), key_check: res.error ? `Échec du test : ${res.error}` : 'Clé valide', resources: res.data };
     },
   },
   {
@@ -179,7 +185,7 @@ const TOOLS = [
     handler: async () => {
       const cfg = getConfig();
       const hasKey = Boolean(getApiKey());
-      const out = { api_key_configured: hasKey, default_site: cfg.default_site || null, journal_file: JOURNAL_FILE, journal_scope: JOURNAL.scope };
+      const out = { api_key_configured: hasKey, default_site: getDefaultSite(), journal_file: JOURNAL_FILE, journal_scope: JOURNAL.scope };
       if (hasKey) out.resources = (await callApi('account', 'resources', {})).data;
       return out;
     },
@@ -209,7 +215,7 @@ const TOOLS = [
     handler: async (a) => {
       const params = { period: normalizePeriod(a.period), id_group: a.id_group, id_filter: a.id_filter };
       if (a.id_entity) params.id_entity = a.id_entity;
-      else params.url = a.url || getConfig().default_site;
+      else params.url = a.url || getDefaultSite();
       if (!params.id_entity && !params.url) throw new Error('Indiquez url ou id_entity (aucun site par défaut enregistré).');
       return callApi('entity', 'get', params);
     },
@@ -290,7 +296,7 @@ const TOOLS = [
       ymd(parseDate(a.date));
       const j = readJson(JOURNAL_FILE, []);
       const id = j.reduce((m, e) => Math.max(m, e.id || 0), 0) + 1;
-      const entry = { id, date: a.date, site: a.site || getConfig().default_site || null, page: a.page || null, type: a.type || null, description: a.description, keywords: a.keywords || [], created_at: new Date().toISOString() };
+      const entry = { id, date: a.date, site: a.site || getDefaultSite(), page: a.page || null, type: a.type || null, description: a.description, keywords: a.keywords || [], created_at: new Date().toISOString() };
       j.push(entry);
       writeJson(JOURNAL_FILE, j, JOURNAL.scope === 'home' ? 0o600 : 0o644);
       return { added: entry, total: j.length, journal_file: JOURNAL_FILE, ...(JOURNAL.scope === 'project' ? { reminder: 'Journal versionné dans le projet : committer et pousser .monitorank/journal.json pour le conserver.' } : {}) };
